@@ -1,0 +1,581 @@
+// ------------  Paquete e importaciones ------------
+package Analizadores;
+
+import java_cup.runtime.*;
+import java.util.LinkedList;
+
+
+//------> Codigo para el parser
+//------> Declaracion de variables, funciones y funciones de error
+
+parser code 
+{:
+    public static String errores_s = ""; 
+    public static String errores_2s = ""; 
+    public void syntax_error(Symbol s)
+    {
+            System.err.println("Error Sintactico: "+ s.value + " - Fila: " + s.right + " - Columna: " + s.left    );
+            Errores.DataErrores.addError(" Sintactico  " , s.right, s.left, s.value.toString());
+            errores_s += "<tr><td>Sintáctico</td><td> Error sintactico encontrado: \""+s.value+"\"</td><td>"+(s.left+1)+"</td><td>"+(s.right+1)+"</td></tr>\n";
+    }
+
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception
+    {
+             Errores.DataErrores.addError(" Sintactico sin recuperacion " , s.right, s.left, s.value.toString());
+              errores_s += "<tr><td>Sintáctico</td><td> Error sintactico encontrado: \""+s.value+"\"</td><td>"+(s.left+1)+"</td><td>"+(s.right+1)+"</td></tr>\n";
+             System.err.println("Error Sintactico: "+ s.value + " - Fila: " + s.right + " - Columna: " + s.left + ". Sin recuperacion." );
+    }
+String TituloBarras ;
+String TituloX;
+String TituloY;
+String TituloPie;
+Object valorId; 
+:}
+
+
+//------> Codigo para las acciones gramaticales (no tocar)
+action code
+{:  :}
+
+
+//------> Declaración de terminales
+terminal  DOS_PUNTOS, COMA, LLAVE_A, LLAVE_C, DOT, DISYUNCION;
+terminal  MAS, MENOS, MULTI, AND, OR, DIVISION, DISTINTO, POTENCIA, CBOOL, PORCENTAJE, PCOMA, NOT, EQUALS;
+terminal  PARA, PARC,MAIN; 
+terminal  CHAR_TYPE, INT_TYPE, BOOL_TYPE, DOUBLE_TYPE, STRING_TYPE, VOID, BREAK, CASE, CATCH, DO, ELSE, FOR, IF, SWITCH, NULL, NEW, PUBLIC, RETURN, WHILE, PRIVATE, TRUE, PRINT, CONSOLE, WRITE, FALSE, TRY, DEFAULT, CONTINUE;
+terminal   STRING, ID, NUM,CHAR;
+terminal   MENORK, MAYORK,MENORIK, MAYORIK;
+terminal  CORCHETEA, CORCHETEC;
+terminal   GBARRAS,GPIE,DGLOBALES,R_TITULO,EJEX,R_TITULOX,R_TITULOY,VALORES;
+terminal  NEWVALOR,DOLAR;
+
+//------> Declaración de no terminales
+non terminal inicio;
+non terminal LinkedList lista_instr;
+non terminal instruccion;
+non terminal expresion,pcomaE;
+non terminal instr_mostrar, if,aritmetico;
+non terminal tipoDato,asignacion,while,dowhile,actualizacion,for,condicionFor;
+non terminal masMenos,switch,cases,maain,globales, instG;
+non terminal  newValue,asigGlob,gBarras,listBarras,instBarras,asigBarras,expBarras;
+non terminal datitos,listDatos,listDatos1,datitos1,datoos1,datoos;
+non terminal instPie,listPie,gPie;
+non terminal datoos2,datitos2,listDatos2,datoos3,datitos3,listDatos3;
+// ------> Precedencia
+precedence left MAYORK, MENORK, MAYORIK, MENORIK, EQUALS,DISTINTO,NOT;
+precedence left OR;
+precedence left AND;
+precedence left MENOS;
+precedence left MAS;
+precedence left MULTI;
+precedence left MAS;
+precedence left MULTI;
+precedence left PORCENTAJE, DIVISION;
+precedence left POTENCIA;
+
+
+//------> Definir Simbolo Inicial
+start with inicio; 
+
+
+// ------------>  Producciones  <------------
+
+inicio ::= VOID MAIN PARA PARC LLAVE_A lista_instr:lista LLAVE_C 
+                                        {:
+                                        
+                                         LinkedList<String> lista1 = new LinkedList<>();                                            
+                                            lista1.add("def main (): ");
+                                           Traductor.Traduc.contador++;
+                                            lista1.addAll(Traductor.Traduc.tabulaciones(lista));
+                                            Traductor.Traduc.contador--;    
+                                             lista1.add("if_name_= \" _main_ \": \n \t \t main()" );
+                                             Traductor.Traduc.traduccion = lista1;
+                                        :}     
+;
+
+
+
+lista_instr ::= lista_instr:lista instruccion:val
+        {: 
+            lista.addAll((LinkedList) val);
+            RESULT = (LinkedList) lista;
+        :}
+
+    | instruccion:val
+        {: 
+            LinkedList<String> lista = new LinkedList<>();
+            lista.addAll((LinkedList) val);
+            RESULT = (LinkedList) lista;
+        :}
+;
+
+
+instruccion ::=  if:val    {: RESULT = val; :}
+    |pcomaE:val    {: RESULT = val; :}
+    |while:val {: RESULT = val; :}
+    |dowhile:val {: RESULT = val; :}
+    |for:val {: RESULT = val; :}
+    |switch:val {: RESULT = val; :}
+    | BREAK PCOMA
+                                        {:
+                                            LinkedList<String> lista = new LinkedList<>();
+                                            RESULT = lista;
+                                        :}
+    
+     |globales
+                                        {:
+                                            LinkedList<String> lista = new LinkedList<>();
+                                            RESULT = lista;
+                                        :}
+      |gBarras                                 
+                                       {:
+                                            LinkedList<String> lista = new LinkedList<>();
+                                            RESULT = lista;
+                                        :}
+      |gPie                                 
+                                       {:
+                                            LinkedList<String> lista = new LinkedList<>();
+                                            RESULT = lista;
+                                        :}
+;
+
+pcomaE ::= asignacion:val  PCOMA{: RESULT = val; :}
+                | instr_mostrar:val PCOMA {: RESULT = val; :}
+                |actualizacion:val PCOMA  {: RESULT = val; :}
+                | error PCOMA
+;
+
+
+if ::= IF  PARA expresion:exp PARC LLAVE_A  lista_instr:inst LLAVE_C 
+                                        {:
+                                            LinkedList<String> lista = new LinkedList<>();
+                                            lista.add("if  "+ exp + ": \n");
+                                           Traductor.Traduc.contador++;
+                                            lista.addAll(Traductor.Traduc.tabulaciones(inst));
+                                            Traductor.Traduc.contador--;
+                                            RESULT = lista;
+                                        :}
+             |IF  PARA expresion:exp  PARC LLAVE_A  lista_instr:inst LLAVE_C ELSE LLAVE_A lista_instr:inst2  LLAVE_C
+                                 {:
+                                            LinkedList<String> lista = new LinkedList<>();
+                                            lista.add("if "+ exp + ":");
+                                           Traductor.Traduc.contador++;
+                                            lista.addAll(Traductor.Traduc.tabulaciones(inst));
+                                            Traductor.Traduc.contador--;
+
+                                           lista.add("else: ");
+                                           Traductor.Traduc.contador++;
+                                            lista.addAll(Traductor.Traduc.tabulaciones(inst2));
+                                            Traductor.Traduc.contador--;
+
+                                            RESULT = lista;
+                               :}
+              |IF  PARA expresion:exp PARC LLAVE_A  lista_instr:inst LLAVE_C ELSE if:val
+                                        {:
+                                            LinkedList<String> lista = new LinkedList<>();
+                                            lista.add("if "+ exp + ":");
+                                           Traductor.Traduc.contador++;
+                                            lista.addAll(Traductor.Traduc.tabulaciones(inst));
+                                            Traductor.Traduc.contador--;
+                                            lista.addAll(Traductor.Traduc.elif((LinkedList) val));                                            
+                                            RESULT = lista;
+                                        :}     
+;
+
+
+while ::=  WHILE PARA expresion:exp PARC LLAVE_A lista_instr:inst LLAVE_C
+                                        {:
+                                            LinkedList<String> lista = new LinkedList<>();
+                                            lista.add("while  "+ exp + ":");
+                                           Traductor.Traduc.contador++;
+                                            lista.addAll(Traductor.Traduc.tabulaciones(inst));
+                                            Traductor.Traduc.contador--;
+                                            RESULT = lista;
+                                        :}     
+;
+
+dowhile ::=  DO LLAVE_A  lista_instr:inst LLAVE_C   WHILE PARA expresion:exp PARC PCOMA
+                                        {:
+                                            LinkedList<String> lista = new LinkedList<>();
+                                            lista.add("while True:");
+                                            LinkedList<String> lista2 = new LinkedList<>();
+                                            
+                                            lista2.addAll((LinkedList) inst);
+                                            lista2.add("if (" + exp + "): \n \t \t break" );
+                                           Traductor.Traduc.contador++;
+                                            lista.addAll(Traductor.Traduc.tabulaciones(lista2));
+                                            Traductor.Traduc.contador--;
+                                            RESULT = lista;
+                                        :}     
+;
+actualizacion ::= ID:id1 EQUALS expresion:exp 
+                                        {: 
+                                            LinkedList<String> lista = new LinkedList<>();
+                                            lista.add(id1+" = " + exp); 
+                                            RESULT = lista;
+                                        :}
+;
+
+
+
+
+instr_mostrar ::= PRINT PARA expresion:val PARC  
+            {: 
+                LinkedList<String> lista = new LinkedList<>();
+                lista.add("print("+val+")"); 
+                RESULT = lista;
+            :}
+;
+asignacion ::=  tipoDato ID:val  
+                                {: 
+                                    LinkedList<String> lista = new LinkedList<>();
+                                    lista.add("var "+val); 
+                                    RESULT = lista;
+                                :}
+                        |tipoDato  ID:id1   EQUALS expresion:exp 
+
+                                        {: 
+                                            LinkedList<String> lista = new LinkedList<>();
+                                            lista.add("var "+id1+" = " + exp); 
+                                            RESULT = lista;
+                                        :}
+;
+
+tipoDato  ::= CHAR_TYPE 
+                    |BOOL_TYPE
+                    |INT_TYPE   
+                    |STRING_TYPE 
+                    | DOUBLE_TYPE  
+;
+expresion ::=NOT expresion:val1  {: RESULT ="!"+ val1.toString()   ; :}
+                    |expresion:val1  AND expresion:val2 {: RESULT = val1.toString() + "  and  " + val2.toString()  ; :}
+                    | expresion:val1  OR expresion:val2 {: RESULT = val1.toString() + "  or " + val2.toString()  ; :} 
+                    | expresion:val1  MENORK expresion:val2 {: RESULT = val1.toString() + "  < " + val2.toString()  ; :}
+                    | expresion:val1  MAYORK expresion: val2 {: RESULT = val1.toString() + " >  " + val2.toString()  ; :}
+                    | expresion:val1  MENORIK expresion:val2 {: RESULT = val1.toString() + "  >=  " + val2.toString()  ; :}
+                    | expresion:val1  MAYORIK expresion:val2 {: RESULT = val1.toString() + " <=  " + val2.toString()  ; :}
+                    | expresion:val1  DISTINTO expresion:val2 {: RESULT = val1.toString() + " !=  " + val2.toString()  ; :}
+                    | expresion:val1 EQUALS EQUALS expresion:val2 {: RESULT = val1.toString() + " ==  " + val2.toString()  ; :}
+                    |aritmetico:val {: RESULT = val; :}
+;
+
+aritmetico ::= aritmetico:val1 POTENCIA  aritmetico:val2 {: RESULT = val1.toString() + " ^ " + val2.toString()  ; :}
+                      | aritmetico:val1 DIVISION aritmetico:val2 {: RESULT = val1.toString() + " / " + val2.toString()  ; :}
+                      | aritmetico:val1 MULTI aritmetico:val2 {: RESULT = val1.toString() + " * " + val2.toString()  ; :}
+                      | aritmetico:val1 MAS  aritmetico:val2 {: RESULT = val1.toString() + " + " + val2.toString()  ; :}
+                      | aritmetico:val1 MENOS aritmetico:val2 {: RESULT = val1.toString() + " - " + val2.toString()  ; :}
+                      | aritmetico:val1 PORCENTAJE aritmetico:val2 {: RESULT = val1.toString() + " % " + val2.toString()  ; :}
+                      |NUM:val {: RESULT = val; :}
+                      |ID:val {: RESULT = val; :}
+                      |STRING:val {: RESULT = val; :}
+                      |TRUE:val {: RESULT = "True" ; :}
+                      |FALSE:val {: RESULT = "False"; :}
+                      |CHAR:val {: RESULT = val; :}
+;
+
+
+for ::= FOR PARA tipoDato ID:id EQUALS expresion:exp PCOMA condicionFor:condi PCOMA masMenos:val3 PARC LLAVE_A  lista_instr:inst LLAVE_C
+                             {:     
+                                    LinkedList<String> lista = new LinkedList<>();
+                                        if (val3.equals("+")) {
+                                                lista.add("for "+id + " in range("+exp + "," + condi +"):" ); 
+                                            } 
+                                            else { 
+                                                    lista.add("for "+id + " in range("+exp + "," + condi +"," + "-1" +"):" ); 
+                                                 }
+                                           Traductor.Traduc.contador++;
+                                            lista.addAll(Traductor.Traduc.tabulaciones(inst));
+                                            Traductor.Traduc.contador--;
+                                            RESULT = lista;
+                             :}
+;
+
+
+
+condicionFor ::= expresion:exp1 MAYORK expresion:exp2 {: RESULT = exp2; :}
+                        |expresion:exp1 MENORK expresion:exp2 {: RESULT = exp2; :}
+                        |expresion:exp1 MAYORIK expresion:exp2 
+                             {:     
+                                    int val = Integer.parseInt(exp2.toString());
+                                    val = val   -  1; 
+                                    RESULT = Integer.toString(val);
+                             :}
+                        |expresion:exp1 MENORIK expresion:exp2 
+                             {:     
+                                    int val = Integer.parseInt(exp2.toString());
+                                    val = val   +1 ; 
+                                    RESULT = Integer.toString(val);
+                             :}
+                            | NUM:val {: RESULT = val ;:}
+;
+
+masMenos ::= ID MAS MAS {: RESULT = "+"; :}
+                       |ID MENOS MENOS {: RESULT = "-"; :}
+;
+
+switch ::= SWITCH PARA ID PARC LLAVE_A cases:val   DEFAULT DOS_PUNTOS lista_instr:inst2 LLAVE_C 
+{:
+     LinkedList<String> lista = new LinkedList<>();
+     lista.add("def switch (case,valor)  \n switcher { " );
+    Traductor.Traduc.contador++;
+     lista.addAll(Traductor.Traduc.tabulaciones((LinkedList)val));
+     Traductor.Traduc.contador--;     
+
+    LinkedList<String> lista2 = new LinkedList<>();
+    lista2.add("default:");
+    Traductor.Traduc.contador++;
+     lista2.addAll(Traductor.Traduc.tabulaciones(inst2));
+     Traductor.Traduc.contador--;   
+    Traductor.Traduc.contador++;
+     lista.addAll(Traductor.Traduc.tabulaciones((LinkedList)lista2));
+     Traductor.Traduc.contador--;     
+
+     lista.add("}");
+     RESULT = lista;
+:}
+;
+
+cases ::=  CASE expresion:exp DOS_PUNTOS lista_instr:inst  
+                                        {:
+                                            LinkedList<String> lista = new LinkedList<>();
+                                            lista.add("" + exp + ":");
+                                             Traductor.Traduc.contador++;
+                                             lista.addAll(Traductor.Traduc.tabulaciones(inst));
+                                             Traductor.Traduc.contador--;                                               
+                                             RESULT = lista;
+                                        :}   
+              |cases:val CASE expresion:exp DOS_PUNTOS lista_instr:inst 
+                                        {:
+                                            LinkedList<String> lista = new LinkedList<>();
+                                            lista.addAll((LinkedList)val );
+                                            lista.add("" + exp + ":");
+                                            Traductor.Traduc.contador++;
+                                            lista.addAll(Traductor.Traduc.tabulaciones(inst));
+                                            Traductor.Traduc.contador--;      
+                                            RESULT = lista;
+                                        :}  
+;
+
+
+globales ::= VOID DGLOBALES PARA PARC LLAVE_A instG  LLAVE_C
+;
+
+instG ::= instG asigGlob
+                |asigGlob
+;
+
+asigGlob ::= STRING_TYPE ID:id EQUALS STRING:value PCOMA
+                        {:
+                         String clavee = String.valueOf(id);                        
+                         data.Data.agregarV(clavee.toLowerCase(), value);
+                        :}
+                    |STRING_TYPE ID:id EQUALS newValue PCOMA
+                        {:
+                        System.out.println("-----------------------------------------------------------------------------------------------");
+                         String clavee = String.valueOf(id);         
+                        System.out.println("Guardando: " + clavee + " value " + valorId);               
+                         data.Data.agregarV(clavee.toLowerCase(), valorId);
+                        :}
+
+                    |DOUBLE_TYPE ID:id EQUALS NUM:value PCOMA
+                        {:
+                         String clavee = String.valueOf(id);                        
+                         data.Data.agregarV(clavee.toLowerCase(), value);
+                        :}
+                    |DOUBLE_TYPE ID:id EQUALS newValue PCOMA
+                        {:
+                        System.out.println("-----------------------------------------------------------------------------------------------");
+                         String clavee = String.valueOf(id);         
+                        System.out.println("Guardando: " + clavee + " value " + valorId);               
+                         data.Data.agregarV(clavee.toLowerCase(), valorId);
+                        :}
+                        |error PCOMA
+;
+newValue ::= DOLAR LLAVE_A NEWVALOR COMA STRING:file COMA STRING:id LLAVE_C 
+                        {:
+                                System.out.println(" ---------------------------------------------------------------------------------------------");
+                            System.out.println(" -File -" +  file +  " id " + id);
+                                String clavee = String.valueOf(file);
+                                String id1 = String.valueOf(id); 
+                                valorId = data.dataJson.getVariable(clavee,id1.toLowerCase());
+                        :}
+
+; 
+
+
+gBarras ::= VOID GBARRAS PARA PARC LLAVE_A  listBarras LLAVE_C 
+
+;
+
+listBarras ::= listBarras instBarras 
+                    |instBarras
+;
+instBarras ::= STRING_TYPE R_TITULO EQUALS expBarras PCOMA
+                       {:
+                                 TituloBarras = valorId.toString();      
+                                 System.out.println("TituloBarras: " + TituloBarras);
+                                  data.Valorees.TituloBarras = TituloBarras;
+                        :}
+                            
+                    | STRING_TYPE R_TITULOX EQUALS expBarras PCOMA
+                       {:
+                                     TituloX = valorId.toString();      
+                                     System.out.println("TituloX: " + TituloX);
+                                    data.Valorees.TituloX = TituloX;         
+                   
+                        :}
+                    | STRING_TYPE R_TITULOY EQUALS expBarras PCOMA
+                       {:
+                                 TituloY = valorId.toString(); 
+                                 data.Valorees.TituloY = TituloY;       
+                                   System.out.println("TituloX: " + TituloY);       
+                        :}
+                    | STRING_TYPE CORCHETEA CORCHETEC EJEX EQUALS  listDatos PCOMA
+                        {: data.Valorees.show(); :}
+                    | DOUBLE_TYPE CORCHETEA CORCHETEC VALORES EQUALS listDatos1 PCOMA  
+                        {: data.Valorees.show(); :}
+                    |asigBarras
+;
+asigBarras ::= tipoDato ID:id EQUALS expBarras
+                        {:
+                              System.out.println("-----------------------------------------asigBarras-----------------------------"); 
+   
+                                  String clavee = String.valueOf(id);
+System.out.println("Guardando: " + clavee + " value " + valorId);
+                                 data.Data.agregarV(clavee.toLowerCase(),valorId);
+                        :}
+;
+
+expBarras::= newValue
+                |STRING:value
+                       {:
+                                 valorId = value.toString();                                     
+                        :}
+                |NUM:value
+                       {:
+                                 valorId = value;                                     
+                        :}
+                |ID:id
+                        {:
+                                String clavee = String.valueOf(id);
+                                valorId = data.Data.obtenerV(clavee.toLowerCase());
+                        :}
+
+;
+listDatos ::= LLAVE_A datitos LLAVE_C 
+;
+  
+datitos ::=datitos COMA datoos
+                |datoos
+;
+
+datoos::= newValue
+                    {: 
+                       data.Valorees.addEjex(valorId.toString());                 
+                    :}
+                    
+                |STRING:value
+                        {:
+                                 data.Valorees.addEjex(value.toString());
+                        :}
+                |ID:id
+                        {:
+                                String clavee = String.valueOf(id);
+                                valorId = data.Data.obtenerV(clavee.toLowerCase());
+                                data.Valorees.addEjex(valorId.toString());
+                        :}
+
+;
+
+
+listDatos1::= LLAVE_A datitos1 LLAVE_C 
+;
+  
+datitos1 ::=datitos1 COMA datoos1
+                |datoos1
+;
+
+datoos1::= newValue
+                    {: 
+                       data.Valorees.addValores(valorId.toString());                 
+                    :}
+
+                |NUM:num
+                    {: 
+                      data.Valorees.addValores(num.toString());                    
+                    :}
+                |ID:id
+                        {:
+                                String clavee = String.valueOf(id);
+                                valorId = data.Data.obtenerV(clavee.toLowerCase());
+                                data.Valorees.addValores(valorId.toString());
+                        :}
+;
+
+
+
+gPie ::= VOID GPIE PARA PARC LLAVE_A  listPie LLAVE_C 
+ {: data.Valorees.show(); :}
+;
+listPie ::= listPie instPie 
+                    |instPie
+;
+instPie ::= STRING_TYPE R_TITULO EQUALS expBarras PCOMA
+                       {:
+                                 TituloPie = valorId.toString();      
+                                 System.out.println("TituloBarras: " + TituloBarras);
+                                  data.Valorees.TituloPie = TituloPie;
+                        :}
+                    | STRING_TYPE CORCHETEA CORCHETEC EJEX EQUALS  listDatos2 PCOMA
+                    | DOUBLE_TYPE CORCHETEA CORCHETEC VALORES EQUALS listDatos3 PCOMA  
+;
+
+listDatos2 ::= LLAVE_A datitos2 LLAVE_C 
+;
+  
+datitos2 ::=datitos2 COMA datoos2
+                |datoos2
+;
+
+datoos2::= newValue
+                    {: 
+                       data.Valorees.addEjexP(valorId.toString());                 
+                    :}
+                    
+                |STRING:value
+                        {:
+                                 data.Valorees.addEjexP(value.toString());
+                        :}
+                |ID:id
+                        {:
+                                String clavee = String.valueOf(id);
+                                valorId = data.Data.obtenerV(clavee.toLowerCase());
+                                data.Valorees.addEjexP(valorId.toString());
+                        :}
+
+;
+
+
+listDatos3::= LLAVE_A datitos3 LLAVE_C 
+;
+  
+datitos3 ::=datitos3 COMA datoos3
+                |datoos3
+;
+
+datoos3::= newValue
+                    {: 
+                       data.Valorees.addValoresP(valorId.toString());                 
+                    :}
+
+                |NUM:num
+                    {: 
+                      data.Valorees.addValoresP(num.toString());                    
+                    :}
+                |ID:id
+                        {:
+                                String clavee = String.valueOf(id);
+                                valorId = data.Data.obtenerV(clavee.toLowerCase());
+                                data.Valorees.addValoresP(valorId.toString());
+                        :}
+;

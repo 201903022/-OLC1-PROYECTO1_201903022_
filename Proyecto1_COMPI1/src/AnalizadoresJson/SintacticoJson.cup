@@ -1,0 +1,72 @@
+
+// ------------  Paquete e importaciones ------------
+package AnalizadoresJson;
+
+import java_cup.runtime.*;
+import java.util.LinkedList;
+import java.util.HashMap;
+
+
+//------> Codigo para el parser
+//------> Declaracion de variables, funciones y funciones de error
+
+parser code 
+{:
+    public static String resultado = ""; 
+    public void symboll(Symbol s)
+    {
+            System.out.println(" "+ s.value + " - Fila: " + s.right + " - Columna: " + s.left + ". Recuperado "  + s.sym);
+    }
+
+    public void syntax_error(Symbol s)
+    {
+            System.err.println("Error Sintactico: "+ s.value + " - Fila: " + s.right + " - Columna: " + s.left + ". Recuperado "+s.sym  );
+    }
+
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception
+    {
+            System.err.println("Error Sintactico: "+ s.value + " - Fila: " + s.right + " - Columna: " + s.left + ". Sin recuperacion." );
+    }
+  HashMap<String,Object> variables = new HashMap();
+:}
+
+//------> Codigo para las acciones gramaticales (no tocar)
+action code
+{:  :}
+
+//------> Declaración de terminales
+terminal  STRING, ID, NUM,CHAR;
+terminal LLAVE_A,LLAVE_C, DOS_PUNTOS,COMA;
+//------> Declaración de no terminales
+non terminal inicio;
+non terminal  lista_instr,instruccion,datos;
+inicio ::=    LLAVE_A lista_instr LLAVE_C 
+                                        {:
+    
+                                        :}     
+;
+lista_instr ::= lista_instr instruccion
+        {: 
+        :}
+        |instruccion
+;
+
+instruccion ::= STRING:clave DOS_PUNTOS  datos:valor
+                           {:
+                               data.dataJson.variables.put(clave.toString(), valor);
+                           :}
+                        |COMA
+                        
+;
+
+datos ::= STRING:value
+                           {:
+                                RESULT = value.toString();
+                           :}
+
+| NUM:value
+                           {:
+ 
+                                RESULT = value;
+                           :}
+;

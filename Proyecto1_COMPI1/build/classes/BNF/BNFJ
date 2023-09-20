@@ -1,0 +1,13 @@
+
+inicio ::=   "{"  lista_instr  "}" 
+lista_instr ::= lista_instr instruccion
+        |instruccion
+
+
+instruccion ::= STRING  ":"  | ","
+                        
+
+
+datos ::= STRING  | NUM
+
+<STRING> = \" ([^\"]|"\\\"")+ \"
